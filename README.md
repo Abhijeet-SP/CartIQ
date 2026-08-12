@@ -56,39 +56,99 @@ This phase isn't code, it's the PRD itself. It covers the problem framing around
 Ends with a single PRD file containing those sections, filled in with real numbers pulled from Phase 1 and 2 outputs wherever possible rather than placeholders.
 
 ## Project Structure
-```
+
+```text
 cartiq/
 ├── data/
-│   ├── raw/                  # original Instacart CSVs
-│   └── cartiq.db             # cleaned SQLite database (Phase 1 output)
+│   ├── raw/                       # Original Instacart CSV files
+│   └── cartiq.db                  # SQLite database (Phase 1 output)
+│
 ├── src/
-│   ├── build_db.py           # raw CSV → cartiq.db
-│   ├── mba.py                # Support/Confidence/Lift computation (Base Layer)
-│   ├── train_ranker.py       # LightGBM training (Intelligent Layer)
-│   └── suggest.py            # given product_id + context → returns bundle
+│   ├── build_db.py                # Build SQLite database from raw CSVs
+│   ├── mba.py                     # Market Basket Analysis: Support, Confidence, Lift
+│   ├── train_ranker.py            # Train LightGBM recommendation ranker
+│   └── suggest.py                 # Generate bundle suggestions for a product
+│
 ├── reports/
-│   ├── data_architecture_spec.md
-│   ├── model_evaluation_report.md
-│   └── PRD.md
-├── requirements.txt
-└── README.md
+│   ├── data_architecture_spec.md  # Data architecture and schema specification
+│   ├── model_evaluation_report.md # Model performance and evaluation
+│   └── PRD.md                     # Product Requirements Document
+│
+├── requirements.txt               # Python dependencies
+└── README.md                      # Project documentation
 ```
 
-## How to run
+## How to Run
+
+### 1. Install Dependencies
 
 ```bash
-# 1. Install dependencies
 pip install -r requirements.txt
+```
 
-# 2. Build the database from raw Instacart CSVs
-python src/build_db.py --input data/raw/ --output data/cartiq.db
+### 2. Build the Database
 
-# 3. Run Market Basket Analysis (Base Layer)
-python src/mba.py --db data/cartiq.db --min-support 0.01 --min-lift 1.2
+Convert the raw Instacart CSV files into the CartIQ SQLite database:
 
-# 4. Train the LightGBM ranker (Intelligent Layer)
-python src/train_ranker.py --db data/cartiq.db
+```bash
+python src/build_db.py \
+    --input data/raw/ \
+    --output data/cartiq.db
+```
 
-# 5. Get a suggestion for a given product
-python src/suggest.py --product_id 24852 --hour 18 --dow 5
+### 3. Run Market Basket Analysis
+
+Run the **Base Recommendation Layer** using Support, Confidence, and Lift:
+
+```bash
+python src/mba.py \
+    --db data/cartiq.db \
+    --min-support 0.01 \
+    --min-lift 1.2
+```
+
+### 4. Train the LightGBM Ranker
+
+Train the **Intelligent Recommendation Layer**:
+
+```bash
+python src/train_ranker.py \
+    --db data/cartiq.db
+```
+
+### 5. Generate a Product Bundle Suggestion
+
+Generate a recommendation for a specific product using contextual information such as hour of day and day of week:
+
+```bash
+python src/suggest.py \
+    --product_id 24852 \
+    --hour 18 \
+    --dow 5
+```
+
+### Pipeline Overview
+
+```text
+Raw Instacart CSVs
+        │
+        ▼
+   build_db.py
+        │
+        ▼
+   cartiq.db
+        │
+        ├───────────────┐
+        ▼               ▼
+     mba.py       train_ranker.py
+        │               │
+        │          LightGBM Ranker
+        │               │
+        └───────┬───────┘
+                ▼
+           suggest.py
+                │
+                ▼
+       Product Bundle
+       Recommendation
 ```
