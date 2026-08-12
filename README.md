@@ -34,7 +34,58 @@ Sampling down to ~50k–100k orders for tractable local processing.
 
 ## Current Problems wrt to ProjectScope
 #### All theory problem
-Lift and the LightGBM ranking identify which bundles are statistically worth testing. They cannot prove the recommendation causes incremental revenue — for that, we'd need an A/B test comparing customers who see the suggestion against those who don't, because a high co-occurrence in past data could simply reflect existing behaviour rather than an effect of the recommendation itself.
+Lift and the LightGBM ranking identify which bundles are statistically worth testing. They cannot prove the recommendation causes incremental revenue — for that, we'd need an A/B test comparing customers who see the suggestion against those who don't, because a high co-occurrence in past data could simply reflect existing behaviour rather than an effect of the recommendation itself. **PRD will be delivered, explaining the real world problem of implementing the feature.**
 
-#### PRD will be delivered, explaining the real world problem of implementing the feature.
+## Phase deliveries
+### Phase 1 — Data Engineering
 
+Goal is a populated SQLite database, not just raw CSVs sitting around. Clean tables for orders, order_products, and products, properly joined on order_id and product_id, sampled down to a working size of roughly 50k–100k orders. Sampling is done by user rather than randomly by row, so a user's order history isn't broken mid-sequence, since that sequence matters later for context features like days since prior order. Basic hygiene checks are done and documented, covering nulls, orphaned rows, and reasonable value ranges. The whole pipeline is reproducible through a single script from raw CSV to clean database, not a one-off manual clean.
+
+Ends with a database file, the script that regenerates it, and a Data Architecture Spec describing the schema and sampling rationale.
+
+### Phase 2 — ML Architecture
+
+The Base Layer uses mlxtend to compute Support, Confidence, and Lift across item pairs from the basket data, with a defined and justified minimum threshold so only meaningfully strong pairs are kept. The Intelligent Layer trains a LightGBM model that takes a candidate bundle plus context like day of week, hour, and cart size, and outputs a ranking score. This layer includes an offline evaluation metric such as precision@k, documented clearly as a ranking-quality metric and not a revenue claim, along with a function that given a product in cart plus context returns the single best bundle suggestion.
+
+Ends with a Model Evaluation Report containing real Support, Confidence, and Lift numbers plus offline precision, and a working function that produces one ranked suggestion given an input.
+
+### Phase 3 — Business Layer
+
+This phase isn't code, it's the PRD itself. It covers the problem framing around thin margins and AOV, an honest statement of what the offline system proves versus what it doesn't, a proposed A/B test design covering unit of randomization, treatment versus control, primary and guardrail metrics, and a rough sample size estimate. It also covers the unit economics logic, margin minus handling cost weighed against abandonment risk, generalized as a simple formula, and ends with an explicit decision rule framed as a hypothesis to be tested rather than a claimed result.
+
+Ends with a single PRD file containing those sections, filled in with real numbers pulled from Phase 1 and 2 outputs wherever possible rather than placeholders.
+
+## Project Structure
+
+cartiq/
+├── data/
+│   ├── raw/                  # original Instacart CSVs
+│   └── cartiq.db             # cleaned SQLite database (Phase 1 output)
+├── src/
+│   ├── build_db.py           # raw CSV → cartiq.db
+│   ├── mba.py                # Support/Confidence/Lift computation (Base Layer)
+│   ├── train_ranker.py       # LightGBM training (Intelligent Layer)
+│   └── suggest.py            # given product_id + context → returns bundle
+├── reports/
+│   ├── data_architecture_spec.md
+│   ├── model_evaluation_report.md
+│   └── PRD.md
+├── requirements.txt
+└── README.md
+
+## How to run
+
+# 1. Install dependencies
+pip install -r requirements.txt
+
+# 2. Build the database from raw Instacart CSVs
+python src/build_db.py --input data/raw/ --output data/cartiq.db
+
+# 3. Run Market Basket Analysis (Base Layer)
+python src/mba.py --db data/cartiq.db --min-support 0.01 --min-lift 1.2
+
+# 4. Train the LightGBM ranker (Intelligent Layer)
+python src/train_ranker.py --db data/cartiq.db
+
+# 5. Get a suggestion for a given product
+python src/suggest.py --product_id 24852 --hour 18 --dow 5
