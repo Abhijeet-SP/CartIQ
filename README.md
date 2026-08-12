@@ -56,7 +56,7 @@ This phase isn't code, it's the PRD itself. It covers the problem framing around
 Ends with a single PRD file containing those sections, filled in with real numbers pulled from Phase 1 and 2 outputs wherever possible rather than placeholders.
 
 ## Project Structure
-
+```
 cartiq/
 ├── data/
 │   ├── raw/                  # original Instacart CSVs
@@ -72,9 +72,11 @@ cartiq/
 │   └── PRD.md
 ├── requirements.txt
 └── README.md
+```
 
 ## How to run
 
+```bash
 # 1. Install dependencies
 pip install -r requirements.txt
 
@@ -89,3 +91,4 @@ python src/train_ranker.py --db data/cartiq.db
 
 # 5. Get a suggestion for a given product
 python src/suggest.py --product_id 24852 --hour 18 --dow 5
+```
