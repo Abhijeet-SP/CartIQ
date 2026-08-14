@@ -13,7 +13,8 @@ Using the [Instacart Market Basket Analysis](https://www.kaggle.com/datasets/psp
 - orders.csv — order metadata + time/day context (order_dow, order_hour_of_day, days_since_prior_order)
 - order_products__prior.csv — actual basket contents (core data for the Base Layer's MBA computation)
 - products.csv — item names, mapped to product_id
-- aisles.csv / departments.csv — for category-level grouping
+- aisles.csv / departments.csv — optional, for category-level grouping
+- order_products__train.csv — not used (belongs to a different Kaggle competition task, not this project's scope)
 
 Sampling down to ~50k–100k orders for tractable local processing.
 
