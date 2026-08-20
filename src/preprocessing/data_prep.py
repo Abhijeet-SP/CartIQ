@@ -1,8 +1,7 @@
 from pathlib import Path
 import pandas as pd
 
-data_file = Path(__file__).resolve().parent.parent/'data'
-print(data_file)
+data_file = Path(__file__).resolve().parent.parent.parent/'data' 
 
 orders = pd.read_csv(data_file/ "raw"/ "orders.csv")
 products = pd.read_csv(data_file / "raw"/ "products.csv")
