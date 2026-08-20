@@ -3,3 +3,4 @@ Data/processed/
 *.db
 .DS_Store
 .cartiq/
+Data/cartiq.db
