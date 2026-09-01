@@ -21,9 +21,9 @@ def ml_model_data_preparation(orders_data, association_matrix):
                                          'consequents', 
                                          'support', 
                                          'confidence',
-                                         'lift']]
-    
-    # data conversion from frozen set to list for merging
+                                         'lift']].copy()
+
+    # frozenset -> str; base_layer guarantees every rule is 1 -> 1
     association_df['antecedents_list'] = association_df['antecedents'].apply(lambda x: next(iter(x)))
     association_df['consequents_list'] = association_df['consequents'].apply(lambda x: next(iter(x)))
 

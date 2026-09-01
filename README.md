@@ -4,19 +4,17 @@ The logistics problem every e-commerce and quick commerce company faces. Wheneve
 Even though the algorithm "Frequently Bought Together or Earlier Bought" is there to increase the cart value, but forcing the user to scroll through carousels of irrelevant product creates a decision fatigue and increase cart abandonment rates.
 
 ## Simple solution 
-A hyper-relevant one click dynamic bundle at the exact moment of purchase. Instead of just what product are bought together the system understand when and why they are bought together. 
+A hyper-relevant one click dynamic bundle and recommendation of products at the exact moment product addition in cart. Instead of just what product are bought together the system understand when and why they are bought together. 
 
 ## Data Source
 
 Using the [Instacart Market Basket Analysis](https://www.kaggle.com/datasets/psparks/instacart-market-basket-analysis) dataset (real order data, not synthetic).
 
-- orders.csv — order metadata + time/day context (order_dow, order_hour_of_day, days_since_prior_order)
-- order_products__prior.csv — actual basket contents (core data for the Base Layer's MBA computation)
-- products.csv — item names, mapped to product_id
-- aisles.csv / departments.csv — optional, for category-level grouping
-- order_products__train.csv — not used (belongs to a different Kaggle competition task, not this project's scope)
-
-Sampling down to ~50k–100k orders for tractable local processing.
+-- Tables were renamed
+- fact_orders_timings.csv — order metadata + time/day context (order_dow, order_hour_of_day, days_since_prior_order)
+- fact_orders_basket.csv — actual basket contents (core data for the Base Layer's MBA computation)
+- dim_products.csv — item names, mapped to product_id
+- dim_departments.csv - department mames, relevant to the product
 
 ## The three layer solution
 1. **Base layer:-** Calculates the absolute mathematical probability that two items belong together. Using mlxtend (a library in python). Will be calculating Support, Confidence and Lift metrics.

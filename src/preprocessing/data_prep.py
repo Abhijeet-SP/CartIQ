@@ -3,7 +3,7 @@ import pandas as pd
 
 data_file = Path(__file__).resolve().parent.parent.parent/'data' 
 
-orders = pd.read_csv(data_file/ "raw"/ "orders.csv")
+orders = pd.read_csv(data_file/ "raw"/ "fact_orders.csv")
 products = pd.read_csv(data_file / "raw"/ "products.csv")
 order_product_prior = pd.read_csv(data_file / "raw"/ "order_products_prior.csv")
 departments = pd.read_csv(data_file / "raw"/ "departments.csv")
@@ -13,7 +13,8 @@ random_order_id = orders[orders['eval_set'] == 'prior']['order_id'].sample(n=200
 print("\nData is selected for sample size of 200000 with random_state=42. \n")
 
 # merging preparation
-order_data = orders[orders['order_id'].isin(random_order_id)][[ 'order_id', 
+order_data = orders[orders['order_id'].isin(random_order_id)][[ 'user_id',
+                                                                'order_id', 
                                                                 'order_dow',
                                                                 'order_hour_of_day', 
                                                                 'days_since_prior_order',
