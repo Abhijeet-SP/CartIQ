@@ -1,152 +1,168 @@
 # CartIQ
-The logistics problem every e-commerce and quick commerce company faces. Whenever the order basket is small the profit margin are razor thin and company losses its profit or get to break even situation. The company only becomes profitable when the order basket is above an average value threshold.
 
-Even though the algorithm "Frequently Bought Together or Earlier Bought" is there to increase the cart value, but forcing the user to scroll through carousels of irrelevant product creates a decision fatigue and increase cart abandonment rates.
+CartIQ is an offline product-recommendation project for grocery and quick-commerce baskets. It learns which products a customer is likely to add next, using their purchase history, current cart size, and order context. The intended product surface is a focused add-to-cart suggestion—not a broad, generic recommendation carousel.
 
-## Simple solution 
-A hyper-relevant one click dynamic bundle and recommendation of products at the exact moment product addition in cart. Instead of just what product are bought together the system understand when and why they are bought together. 
+> Project status: this repository contains the data-preparation and offline-modeling workflow. It does **not** yet contain a deployed API, frontend, real-time feature store, or A/B-test results.
 
-## Data Source
+![CartIQ pipeline](docs/screenshots/data-pipeline.png)
 
-Using the [Instacart Market Basket Analysis](https://www.kaggle.com/datasets/psparks/instacart-market-basket-analysis) dataset (real order data, not synthetic).
+## Problem and scope
 
--- Tables were renamed
-- fact_orders_timings.csv — order metadata + time/day context (order_dow, order_hour_of_day, days_since_prior_order)
-- fact_orders_basket.csv — actual basket contents (core data for the Base Layer's MBA computation)
-- dim_products.csv — item names, mapped to product_id
-- dim_departments.csv - department mames, relevant to the product
+Small baskets often have limited margin. A relevant suggestion can increase basket value, but irrelevant suggestions add friction and may increase abandonment. CartIQ addresses the ranking problem: from a manageable set of eligible products, rank products that are most likely to be added later in the same order.
 
-## The three layer solution
-1. **Base layer:-** Calculates the absolute mathematical probability that two items belong together. Using mlxtend (a library in python). Will be calculating Support, Confidence and Lift metrics.
-2. **Intelligent Layer:-** Storing those mathematical pairs against real-time constraints, like time of the day, day of the week or current cart size. Serving the single optimal bundle.
-3. **Business Layer:-** Deliverable: PRD, but with the honest reasoning chain.
-   - Lift/LightGBM = candidate generation and ranking only, not proof of causal impact
-   - Proposed A/B test design: treatment (popup shown) vs. control (not shown) comparing attach rate / AOV between groups, since only that separates "would've bought it anyway" from "actually caused by the nudge"
-   - Unit economics: per-item margin minus handling cost (the ₹10 − ₹3 = ₹7 logic) weighed against friction/abandonment risk on non-converters.
-   - Decision rule: ship only if total gains from conversions outweigh total losses from abandonment — determined by the test, not assumed in advance
+In scope:
 
-## TechStack 
-1. Sqlite for Database
-2. mlxtend for analysis
-3. LightGBM for score and ranking
+- Build product-level prior and train-order tables from Instacart data.
+- Derive user, user-product, cart-state, product, and order-context features.
+- Generate candidates from a customer's product history and globally popular products.
+- Train a LightGBM binary classifier and evaluate order-level top-10 rankings.
 
-## Current Problems wrt to ProjectScope
-#### All theory problem
-Lift and the LightGBM ranking identify which bundles are statistically worth testing. They cannot prove the recommendation causes incremental revenue — for that, we'd need an A/B test comparing customers who see the suggestion against those who don't, because a high co-occurrence in past data could simply reflect existing behaviour rather than an effect of the recommendation itself. **PRD will be delivered, explaining the real world problem of implementing the feature.**
+Out of scope:
 
-## Phase deliveries
-### Phase 1 — Data Engineering
+- Proving incremental revenue, conversion lift, or reduced abandonment.
+- Serving recommendations in production.
+- Real-time inventory, price, margin, or promotion-aware ranking.
 
-Goal is a populated SQLite database, not just raw CSVs sitting around. Clean tables for orders, order_products, and products, properly joined on order_id and product_id, sampled down to a working size of roughly 50k–100k orders. Sampling is done by user rather than randomly by row, so a user's order history isn't broken mid-sequence, since that sequence matters later for context features like days since prior order. Basic hygiene checks are done and documented, covering nulls, orphaned rows, and reasonable value ranges. The whole pipeline is reproducible through a single script from raw CSV to clean database, not a one-off manual clean.
+An online experiment is required before claiming business impact. Offline ranking metrics measure how well the model recovers products later added to the basket; they do not establish that showing a recommendation caused a purchase.
 
-Ends with a database file, the script that regenerates it, and a Data Architecture Spec describing the schema and sampling rationale.
+## How it works
 
-### Phase 2 — ML Architecture
+1. `notebooks/preprocessing.ipynb` joins order timing, basket, product, and department data, then writes product-level prior and train-order tables.
+2. `notebooks/model_data_prep.ipynb` creates customer features, customer-product history, partial-cart states, candidate products, labels, and the final Parquet training table.
+3. `notebooks/model.ipynb` splits on unique `order_id` values, trains LightGBM, scores validation candidates, and reports Precision@10 and Recall@10.
 
-The Base Layer uses mlxtend to compute Support, Confidence, and Lift across item pairs from the basket data, with a defined and justified minimum threshold so only meaningfully strong pairs are kept. The Intelligent Layer trains a LightGBM model that takes a candidate bundle plus context like day of week, hour, and cart size, and outputs a ranking score. This layer includes an offline evaluation metric such as precision@k, documented clearly as a ranking-quality metric and not a revenue claim, along with a function that given a product in cart plus context returns the single best bundle suggestion.
+For each train order, the notebook creates a partial cart from the first half of the basket. Products in the remaining half are positive targets. Candidates are the customer's historical products (up to 30) plus globally popular products (up to 20), after removing products already in the cart.
 
-Ends with a Model Evaluation Report containing real Support, Confidence, and Lift numbers plus offline precision, and a working function that produces one ranked suggestion given an input.
+## Data source
 
-### Phase 3 — Business Layer
+The data is the [Instacart Market Basket Analysis dataset](https://www.kaggle.com/datasets/psparks/instacart-market-basket-analysis). Large data files are intentionally ignored by Git, so download them separately and place the renamed CSVs under `data/raw/`.
 
-This phase isn't code, it's the PRD itself. It covers the problem framing around thin margins and AOV, an honest statement of what the offline system proves versus what it doesn't, a proposed A/B test design covering unit of randomization, treatment versus control, primary and guardrail metrics, and a rough sample size estimate. It also covers the unit economics logic, margin minus handling cost weighed against abandonment risk, generalized as a simple formula, and ends with an explicit decision rule framed as a hypothesis to be tested rather than a claimed result.
+| Local file | Purpose |
+| --- | --- |
+| `fact_orders_timing.csv` | Order, customer, day, hour, and time-since-prior-order context |
+| `fact_orders_basket_prior.csv` | Products in historical (`prior`) orders |
+| `fact_orders_basket_train.csv` | Products in labeled `train` orders |
+| `dim_products.csv` | Product name, aisle, and department key |
+| `dim_departments.csv` | Department labels |
 
-Ends with a single PRD file containing those sections, filled in with real numbers pulled from Phase 1 and 2 outputs wherever possible rather than placeholders.
+The current raw dataset contains 3.42M order records, 32.43M prior basket rows, 1.38M train basket rows, 49,688 products, and 21 departments.
 
-## Project Structure
+## Data and model snapshot
+
+![Training dataset snapshot](docs/screenshots/dataset-snapshot.png)
+
+The generated `model_data.parquet` in this checkout has 5,334,991 candidate rows across 124,364 train orders. It has 23 columns and no missing values after feature preparation. The positive class rate is 3.95%, so evaluation should be interpreted with that imbalance in mind.
+
+### Model features
+
+| Feature group | Included signals |
+| --- | --- |
+| Order context | order number, day of week, hour, days since prior order, partial-cart size |
+| Customer profile | total prior orders, average basket size, average reorder interval, average order hour |
+| Customer-product history | prior orders, reorders, first/last order, reorder rate, bought-before flags |
+| Product metadata | product ID, aisle ID, department ID |
+
+## Offline evaluation
+
+![Offline evaluation snapshot](docs/screenshots/model-evaluation.png)
+
+The saved output in `notebooks/model.ipynb` reports:
+
+| Metric | Result | Meaning |
+| --- | ---: | --- |
+| Precision@5 | 20.67% | On average, about 1.07 of the ten highest-ranked candidates was purchased later. |
+| Recall@10 | 63.65% | The top ten captured about 63.65% of the products later added from the evaluated candidate set. |
+
+These figures are offline ranking results from the notebook's order-level validation split. They are not a business-impact metric and should be recomputed after any data, candidate-generation, feature, or model change.
+
+## Repository layout
 
 ```text
-cartiq/
+CartIQ/
 ├── data/
-│   ├── raw/                       # Original Instacart CSV files
-│   └── cartiq.db                  # SQLite database (Phase 1 output)
-│
-├── src/
-│   ├── build_db.py                # Build SQLite database from raw CSVs
-│   ├── mba.py                     # Market Basket Analysis: Support, Confidence, Lift
-│   ├── train_ranker.py            # Train LightGBM recommendation ranker
-│   └── suggest.py                 # Generate bundle suggestions for a product
-│
+│   ├── raw/                         # Downloaded Instacart inputs (Git-ignored)
+│   └── processed/                   # Generated tables and model dataset (Git-ignored)
+├── docs/screenshots/                # README pipeline, dataset, and evaluation snapshots
+├── notebooks/
+│   ├── preprocessing.ipynb          # Raw tables → order-product tables
+│   ├── model_data_prep.ipynb        # Features, cart states, candidates → model_data.parquet
+│   └── model.ipynb                  # LightGBM training and Precision@10/Recall@10
 ├── reports/
-│   ├── data_architecture_spec.md  # Data architecture and schema specification
-│   ├── model_evaluation_report.md # Model performance and evaluation
-│   └── PRD.md                     # Product Requirements Document
-│
-├── requirements.txt               # Python dependencies
-└── README.md                      # Project documentation
+│   └── model_evaluation.md          # Reserved for a standalone evaluation report
+├── src/
+│   ├── preprocessing/base_layer.py  # Association-rule exploration utility
+│   ├── ft_split.py                  # Earlier feature-split experiment
+│   └── train_model.py               # Earlier LightGBM experiment
+├── requirements.txt
+└── README.md
 ```
 
-## How to Run
+The notebooks are the current end-to-end workflow. The Python files under `src/ft_split.py`, `src/train_model.py`, and `src/preprocessing/base_layer.py` are earlier exploratory work and are not the path used to create the checked-in processed artifacts.
 
-### 1. Install Dependencies
+## Run the workflow
+
+### Prerequisites
+
+- Python 3.10+
+- Jupyter Notebook or JupyterLab
+- Sufficient local storage for the raw and processed data (the processed files are several GB)
+- At least 16 GB RAM is recommended: the prior-order table alone was recorded at about 4.5 GB in memory during preparation
+
+### Setup
 
 ```bash
+git clone <your-repository-url>
+cd CartIQ
+python -m venv .venv
+source .venv/bin/activate
 pip install -r requirements.txt
+pip install jupyter
 ```
 
-### 2. Build the Database
+Download the Instacart files, rename them to the local filenames in the [data source table](#data-source), and put them in `data/raw/`.
 
-Convert the raw Instacart CSV files into the CartIQ SQLite database:
-
-```bash
-python src/build_db.py \
-    --input data/raw/ \
-    --output data/cartiq.db
-```
-
-### 3. Run Market Basket Analysis
-
-Run the **Base Recommendation Layer** using Support, Confidence, and Lift:
-
-```bash
-python src/mba.py \
-    --db data/cartiq.db \
-    --min-support 0.01 \
-    --min-lift 1.2
-```
-
-### 4. Train the LightGBM Ranker
-
-Train the **Intelligent Recommendation Layer**:
-
-```bash
-python src/train_ranker.py \
-    --db data/cartiq.db
-```
-
-### 5. Generate a Product Bundle Suggestion
-
-Generate a recommendation for a specific product using contextual information such as hour of day and day of week:
-
-```bash
-python src/suggest.py \
-    --product_id 24852 \
-    --hour 18 \
-    --dow 5
-```
-
-### Pipeline Overview
+The notebooks currently use an absolute path to this author's checkout. Before executing them in another clone, replace:
 
 ```text
-Raw Instacart CSVs
-        │
-        ▼
-   build_db.py
-        │
-        ▼
-   cartiq.db
-        │
-        ├───────────────┐
-        ▼               ▼
-     mba.py       train_ranker.py
-        │               │
-        │          LightGBM Ranker
-        │               │
-        └───────┬───────┘
-                ▼
-           suggest.py
-                │
-                ▼
-       Product Bundle
-       Recommendation
+/Users/abhijeetsinghparihar/Desktop/Projects/Supply Chain Project/CartIQ
 ```
+
+with your local repository path.
+
+### Execute in order
+
+```bash
+jupyter notebook
+```
+
+Then use **Run All** in this sequence:
+
+1. `notebooks/preprocessing.ipynb`
+2. `notebooks/model_data_prep.ipynb`
+3. `notebooks/model.ipynb`
+
+Expected generated artifacts:
+
+| Step | Key outputs |
+| --- | --- |
+| Preprocessing | `order_product_data_prior.csv`, `order_product_data_train.csv` |
+| Feature and candidate preparation | `user_orders.csv`, `user_features.csv`, `user_product_history.pkl`, `training_states.pkl`, `order_training_states.pkl`, `model_data.parquet` |
+| Modeling | LightGBM training output plus Precision@10 and Recall@10 in the notebook |
+
+## Next steps
+
+1. Move the notebook logic into parameterized, repo-relative scripts for repeatable runs.
+2. Save the trained model and add a small inference function that accepts cart and customer context.
+3. Add catalog, availability, price, margin, and policy filters before recommendation display.
+4. Run an A/B test with attach rate, conversion, average order value, margin, and abandonment as metrics.
+
+## Tech stack
+
+- Python, pandas, and PyArrow for data preparation and Parquet storage
+- scikit-learn for the order-level validation split
+- LightGBM for binary ranking scores
+- mlxtend for the retained association-rule exploration utility
+
+## License and attribution
+
+This repository uses the Instacart Market Basket Analysis data for project and modeling purposes. Review and comply with the dataset's [Kaggle terms and license](https://www.kaggle.com/datasets/psparks/instacart-market-basket-analysis) before redistributing data or using it beyond that scope.

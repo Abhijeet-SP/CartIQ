@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="780" viewBox="0 0 1400 780">
+  <rect width="1400" height="780" fill="#0f172a"/>
+  <text x="80" y="95" fill="#f8fafc" font-family="Arial, sans-serif" font-size="46" font-weight="700">Offline evaluation snapshot</text>
+  <text x="80" y="138" fill="#94a3b8" font-family="Arial, sans-serif" font-size="24">Recorded output of notebooks/model.ipynb</text>
+  <g font-family="Arial, sans-serif">
+    <rect x="80" y="220" width="570" height="290" rx="24" fill="#1e293b" stroke="#38bdf8" stroke-width="3"/>
+    <text x="125" y="290" fill="#7dd3fc" font-size="28" font-weight="700">Precision@10</text>
+    <text x="125" y="407" fill="#f8fafc" font-size="92" font-weight="700">10.67%</text>
+    <text x="125" y="463" fill="#cbd5e1" font-size="24">Share of the top 10 candidates that were purchased later</text>
+    <rect x="750" y="220" width="570" height="290" rx="24" fill="#1e293b" stroke="#34d399" stroke-width="3"/>
+    <text x="795" y="290" fill="#6ee7b7" font-size="28" font-weight="700">Recall@10</text>
+    <text x="795" y="407" fill="#f8fafc" font-size="92" font-weight="700">63.65%</text>
+    <text x="795" y="463" fill="#cbd5e1" font-size="24">Share of later-purchased items captured in the top 10</text>
+  </g>
+  <rect x="80" y="580" width="1240" height="94" rx="16" fill="#172554"/>
+  <text x="120" y="638" fill="#bfdbfe" font-family="Arial, sans-serif" font-size="25">Ranking metrics—not evidence of incremental conversion, revenue, or average order value.</text>
+</svg>

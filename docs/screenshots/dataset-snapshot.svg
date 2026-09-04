@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="780" viewBox="0 0 1400 780">
+  <rect width="1400" height="780" fill="#0f172a"/>
+  <text x="80" y="95" fill="#f8fafc" font-family="Arial, sans-serif" font-size="46" font-weight="700">Training dataset snapshot</text>
+  <text x="80" y="138" fill="#94a3b8" font-family="Arial, sans-serif" font-size="24">Values read from data/processed/model_data.parquet in this checkout</text>
+  <g font-family="Arial, sans-serif">
+    <rect x="80" y="210" width="280" height="180" rx="20" fill="#1e293b" stroke="#38bdf8" stroke-width="3"/>
+    <text x="115" y="278" fill="#7dd3fc" font-size="22">Candidate rows</text><text x="115" y="342" fill="#f8fafc" font-size="46" font-weight="700">5,334,991</text>
+    <rect x="405" y="210" width="280" height="180" rx="20" fill="#1e293b" stroke="#a78bfa" stroke-width="3"/>
+    <text x="440" y="278" fill="#c4b5fd" font-size="22">Train orders</text><text x="440" y="342" fill="#f8fafc" font-size="46" font-weight="700">124,364</text>
+    <rect x="730" y="210" width="280" height="180" rx="20" fill="#1e293b" stroke="#fbbf24" stroke-width="3"/>
+    <text x="765" y="278" fill="#fde68a" font-size="22">Users</text><text x="765" y="342" fill="#f8fafc" font-size="46" font-weight="700">124,364</text>
+    <rect x="1055" y="210" width="265" height="180" rx="20" fill="#1e293b" stroke="#34d399" stroke-width="3"/>
+    <text x="1090" y="278" fill="#6ee7b7" font-size="22">Products</text><text x="1090" y="342" fill="#f8fafc" font-size="46" font-weight="700">43,651</text>
+    <rect x="80" y="455" width="1240" height="170" rx="20" fill="#1e293b"/>
+    <text x="120" y="515" fill="#f8fafc" font-size="28" font-weight="700">Candidate construction</text>
+    <text x="120" y="562" fill="#cbd5e1" font-size="25">For each held-out portion of a train order, candidates combine the user’s purchase history</text>
+    <text x="120" y="602" fill="#cbd5e1" font-size="25">(up to 30 products) with globally popular products (up to 20), excluding products already in cart.</text>
+  </g>
+  <text x="80" y="710" fill="#94a3b8" font-family="Arial, sans-serif" font-size="21">Label positive rate: 3.95% · 23 stored columns · no missing values in the generated model table</text>
+</svg>
