@@ -1,6 +1,13 @@
-Data/raw/
-Data/processed/
+# Raw and generated data (~4.3 GB) — see README "Data is not in this repository"
+data/raw/
+data/processed/
+data/cartiq.db
 *.db
-.DS_Store
+
+# Environments / caches
 .cartiq/
-Data/cartiq.db
+.venv/
+__pycache__/
+*.pyc
+
+.DS_Store

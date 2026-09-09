@@ -1,5 +1,15 @@
-pandas 
-pyarrow
-mlxtend 
-lightgbm
-scikit-learn
+# Pinned to the versions used to produce the artifacts described in README.md.
+# Python 3.13 (virtualenv: .cartiq)
+
+# Data preparation
+pandas==3.0.5
+numpy==2.5.2
+pyarrow==25.0.1          # Parquet engine for data/processed/model_data.parquet
+
+# Modeling
+lightgbm==4.7.0
+scikit-learn==1.9.0
+mlxtend==0.25.0          # association rules in src/preprocessing/base_layer.py
+
+# Notebook runtime (the three notebooks under notebooks/ are the entry point)
+ipykernel==7.3.0
